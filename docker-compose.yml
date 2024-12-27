@@ -1,0 +1,49 @@
+version: '3.0'
+
+services:
+  nginx:
+    image: nginx:stable-alpine
+    depends_on:
+      - fpm
+    volumes:
+      - ./docker/nginx/:/etc/nginx/conf.d:ro
+      - ./:/var/www/
+    ports:
+      - "80:80"
+  postgres:
+    image: postgres:15.0-alpine
+    volumes:
+      - "./docker/postgres/data:/var/lib/postgresql/data"
+    environment:
+      - PGPASSWORD=secret
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=kefirium
+      - POSTGRES_PORT=5432
+      - POSTGRES_HOST=postgres
+    ports:
+      - "5432:5432"
+  fpm:
+    build:
+      context: ./
+      dockerfile: ./docker/php/Dockerfile
+    volumes:
+      - ./:/var/www/
+    depends_on:
+      - postgres
+  pgadmin:
+    image: dpage/pgadmin4
+    depends_on:
+      - postgres
+    environment:
+      PGADMIN_DEFAULT_EMAIL: pgadmin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "82:80"
+  script:
+    build:
+      context: ./
+      dockerfile: ./docker/script/Dockerfile
+    depends_on:
+      - postgres
